@@ -186,17 +186,38 @@ The server creates `OrpcContext` in
 [`apps/server/src/orpc/orpc.context.ts`](../apps/server/src/orpc/orpc.context.ts)
 from the Better Auth session. Global roles are defined in
 [`packages/auth/src/rbac.ts`](../packages/auth/src/rbac.ts): `student`,
-`provider`, and `admin`. Authorization has two deliberately different helpers:
+`provider`, and `admin`. The long-term RBAC boundary is deliberately simple:
 
-| Helper | Responsibility | Use it when |
+| Layer | Responsibility | Uses |
 | --- | --- | --- |
-| [`requireSessionWithAnyRole`](../apps/server/src/orpc/orpc.authorization.ts) | Verifies a session exists and its user has **any** allowed role; returns the now non-null session. | Writing a focused authorization check. |
-| `createRoleMiddleware` in [`orpc.router.ts`](../apps/server/src/orpc/orpc.router.ts) | Adapts that check into oRPC middleware for a procedure. | Applying the same requirement with `.use(...)`. |
+| [`packages/auth/src/rbac.ts`](../packages/auth/src/rbac.ts) | Defines roles and the shared `hasAnyRole` matching policy. | Every server transport that needs global-role matching. |
+| `createRoleMiddleware` in [`orpc.router.ts`](../apps/server/src/orpc/orpc.router.ts) | Performs oRPC session and role enforcement, returning oRPC `UNAUTHORIZED` or `FORBIDDEN` errors. | Applying a role requirement with `.use(...)`. |
+| Future Nest `RolesGuard` | Performs equivalent controller-boundary enforcement using Nest HTTP exceptions. | A traditional Nest controller or infrastructure endpoint that needs roles. |
 
-`requireSessionWithAnyRole` throws `UNAUTHORIZED` without a session and
-`FORBIDDEN` when the assigned Better Auth role lacks access. Its plural
-`AnyRole` wording is intentional: a user passes if one of the allowed roles
-matches; it does not require every listed role.
+There is no shared `requireRoles` or `requireSessionWithAnyRole` wrapper. Such
+a wrapper would either leak oRPC errors into Nest controllers or duplicate a
+transport adapter. The one shared policy is `hasAnyRole`: a user passes when
+one of their assigned roles matches an allowed role; they do not need every
+listed role.
+
+#### Extend authorization without creating technical debt
+
+For the current oRPC transport, add a role requirement with
+`createRoleMiddleware`. If a future conventional Nest controller needs RBAC,
+add a Nest `RolesGuard` in `apps/server` that reads the Better Auth session and
+calls `hasAnyRole`. Do not import oRPC middleware or `ORPCError` into that
+guard.
+
+```text
+Shared role policy              packages/auth/rbac.ts
+oRPC request enforcement        apps/server/src/orpc/
+Nest controller enforcement     future apps/server auth/guard feature
+Resource ownership/invariants   apps/server service
+```
+
+Create abstractions only when the current code has a clear reuse case. A Nest
+guard is not necessary while all protected application APIs use oRPC; similarly,
+do not move service-level ownership checks into either transport adapter.
 
 Use the router middleware factory for a new protected procedure:
 

@@ -1,26 +1,31 @@
-import type { UserRole } from "@monitoring-scholarship-app/auth/rbac";
+import {
+  hasAnyRole,
+  type UserRole,
+} from "@monitoring-scholarship-app/auth/rbac";
 import { appContract } from "@monitoring-scholarship-app/api";
-import { implement } from "@orpc/server";
+import { implement, ORPCError } from "@orpc/server";
 
-import { requireSessionWithAnyRole } from "./orpc.authorization";
 import type { OrpcContext } from "./orpc.context";
 import { OrpcService } from "./orpc.service";
 
 export function createAppRouter(orpcService: OrpcService) {
   const o = implement<typeof appContract, OrpcContext>(appContract);
 
-  // Turns the shared session/role check into middleware for one or more procedures.
-  // A request passes when its user has any role in `allowedRoles`.
+  // This is the oRPC transport adapter for RBAC. Nest controllers should use a
+  // Nest guard instead; both adapters share `hasAnyRole` as the role policy.
   const createRoleMiddleware = (...allowedRoles: UserRole[]) =>
     o.middleware(async ({ context, next }) => {
-      const session = requireSessionWithAnyRole(
-        context.session,
-        allowedRoles,
-      );
+      if (!context.session) {
+        throw new ORPCError("UNAUTHORIZED");
+      }
+
+      if (!hasAnyRole(context.session.user.role, allowedRoles)) {
+        throw new ORPCError("FORBIDDEN");
+      }
 
       return next({
         context: {
-          session,
+          session: context.session,
         },
       });
     });

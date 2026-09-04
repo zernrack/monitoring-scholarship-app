@@ -58,11 +58,15 @@ implementation is composed from `apps/server/src/orpc/`. The oRPC transport is
 mounted at `/rpc`; Better Auth is hosted by `apps/server` at `/api/auth/*path`.
 
 Global Better Auth roles are `student`, `provider`, and `admin`. Define policy
-in `packages/auth/src/rbac.ts`. `requireSessionWithAnyRole` in
-`apps/server/src/orpc/orpc.authorization.ts` verifies the session and role;
-`createRoleMiddleware` in `orpc.router.ts` applies that check to oRPC
-procedures. Always add domain ownership checks in services in addition to a
-role check.
+in `packages/auth/src/rbac.ts`, including the shared `hasAnyRole` matching
+policy. `createRoleMiddleware` in `orpc.router.ts` is the oRPC enforcement
+adapter; future Nest controllers should use a Nest guard that calls the same
+policy. Always add domain ownership checks in services in addition to a role
+check.
+
+Keep policy transport-neutral: do not expose oRPC errors from `packages/auth`
+or reuse oRPC middleware in Nest controllers. Add a new transport adapter only
+when that transport exists; avoid speculative guards and premature packages.
 
 ## Commands
 

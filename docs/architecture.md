@@ -240,9 +240,11 @@ Better Auth's Admin plugin provides the current global RBAC model. The policy
 definitions are in `packages/auth/src/rbac.ts` and define the `student`,
 `provider`, and `admin` roles. New registrations receive `student` by default.
 The plugin-added role, ban, and impersonation fields are stored in the
-server-only Prisma schema. The reusable `requireSessionWithAnyRole` helper lives in
-`apps/server/src/orpc/orpc.authorization.ts`; use it from an oRPC middleware
-to enforce roles. Role checks do not replace domain ownership checks:
+server-only Prisma schema. `packages/auth/src/rbac.ts` defines the shared
+`hasAnyRole` policy. The oRPC router adapts that policy with
+`createRoleMiddleware`; a future Nest controller should adapt the same policy
+with a Nest guard rather than importing oRPC errors. Role checks do not replace
+domain ownership checks:
 for example, a provider must also own the scholarship they are attempting to
 change.
 
@@ -257,6 +259,37 @@ service
 ```
 
 The frontend may read session state and provide login/logout UX. The server is authoritative for authentication verification, protected actions, roles, and permissions. Frontend authorization is only UX; server authorization is mandatory.
+
+### Long-term authorization design
+
+Keep RBAC stable as API transports evolve by separating **policy** from
+**enforcement**:
+
+```text
+packages/auth/rbac.ts
+  └─ roles, permissions, hasAnyRole()        shared policy
+
+apps/server oRPC router
+  └─ createRoleMiddleware()                  oRPC enforcement adapter
+
+apps/server future Nest controller
+  └─ RolesGuard                              Nest HTTP enforcement adapter
+
+apps/server service
+  └─ ownership + domain/business authorization
+```
+
+`hasAnyRole` must remain transport-neutral: it answers only whether an
+assigned role matches an allowed role. The oRPC adapter is responsible for
+oRPC errors; a future Nest `RolesGuard` is responsible for Nest HTTP
+exceptions. Do not create a shared helper that throws transport-specific errors
+or import oRPC code into a controller guard.
+
+When a new endpoint type is introduced, add a small adapter in `apps/server`
+for that transport and reuse the shared policy. Do not create a Nest guard
+until a controller actually needs it, and do not move ownership checks out of
+the service layer. This avoids both premature abstractions and duplicated RBAC
+rules.
 
 ## PartyKit and Cloudflare R2
 
@@ -331,7 +364,7 @@ Turborepo orchestrates tasks and caching via `turbo.json`; build and type-check 
 | NestJS module/provider/controller, business service, webhook, health endpoint | `apps/server` |
 | Repository and Prisma query/client | `apps/server` or server-only `packages/db` |
 | Better Auth authoritative configuration | server-only `packages/auth`, hosted by `apps/server` |
-| Authorization | `apps/server`; use `requireSessionWithAnyRole` for the session/role check and `createRoleMiddleware` to attach it to an oRPC procedure |
+| Authorization | `apps/server`; `hasAnyRole` is shared policy, `createRoleMiddleware` enforces it for oRPC, and future Nest controllers use a Nest guard |
 | PartyKit publishing decision | `apps/server` |
 | PartyKit subscription | `apps/web` |
 | Privileged R2 integration | `apps/server` |
@@ -375,7 +408,9 @@ Future shared packages—such as `packages/testing` or a narrowly scoped `packag
 13. PartyKit is realtime transport, not primary business logic; R2 credentials stay server-side.
 14. Webhooks and traditional HTTP endpoints still belong in `apps/server`.
 15. Shared packages need explicit dependency boundaries; `packages/api` is never deployed independently.
-16. MCP and AI skills are development tooling, not runtime services.
+16. Keep authorization policy transport-neutral; enforce it through the server
+    adapter for the active transport and retain ownership checks in services.
+17. MCP and AI skills are development tooling, not runtime services.
 17. When unsure where executable backend behavior belongs, place it in `apps/server`.
 
 ```text
