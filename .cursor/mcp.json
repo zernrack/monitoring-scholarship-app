@@ -15,8 +15,11 @@
     "neon": {
       "url": "https://mcp.neon.tech/mcp"
     },
+    "orpc": {
+      "url": "https://orpc.dev/mcp"
+    },
     "better-auth": {
-      "url": "https://mcp.inkeep.com/better-auth/mcp"
+      "url": "https://mcp.better-auth.com/mcp"
     }
   }
 }

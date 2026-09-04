@@ -1,4 +1,4 @@
-import type { AppRouterClient } from "@monitoring-scholarship-app/api/routers/index";
+import type { AppRouterClient } from "@monitoring-scholarship-app/api";
 
 import { env } from "@monitoring-scholarship-app/env/web";
 import { createORPCClient } from "@orpc/client";

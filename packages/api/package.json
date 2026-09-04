@@ -14,14 +14,7 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@monitoring-scholarship-app/auth": "workspace:*",
-    "@monitoring-scholarship-app/db": "workspace:*",
-    "@monitoring-scholarship-app/env": "workspace:*",
-    "@orpc/client": "catalog:",
-    "@orpc/openapi": "catalog:",
-    "@orpc/server": "catalog:",
-    "@orpc/zod": "catalog:",
-    "dotenv": "catalog:",
+    "@orpc/contract": "1.15.0",
     "zod": "catalog:"
   },
   "devDependencies": {

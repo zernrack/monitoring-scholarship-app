@@ -14,6 +14,10 @@ args = [ "-y", "next-devtools-mcp@latest" ]
 type = "http"
 url = "https://mcp.neon.tech/mcp"
 
+[mcp_servers.orpc]
+type = "http"
+url = "https://orpc.dev/mcp"
+
 [mcp_servers.better-auth]
 type = "http"
-url = "https://mcp.inkeep.com/better-auth/mcp"
+url = "https://mcp.better-auth.com/mcp"

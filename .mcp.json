@@ -16,9 +16,13 @@
       "type": "http",
       "url": "https://mcp.neon.tech/mcp"
     },
+    "orpc": {
+      "type": "http",
+      "url": "https://orpc.dev/mcp"
+    },
     "better-auth": {
       "type": "http",
-      "url": "https://mcp.inkeep.com/better-auth/mcp"
+      "url": "https://mcp.better-auth.com/mcp"
     }
   }
 }
