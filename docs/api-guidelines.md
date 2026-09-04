@@ -184,16 +184,63 @@ is executable server code, and the service owns the use case.
 
 The server creates `OrpcContext` in
 [`apps/server/src/orpc/orpc.context.ts`](../apps/server/src/orpc/orpc.context.ts)
-from the Better Auth session. The current `requireAuth` middleware in
-`orpc.router.ts` protects `privateData`; reuse the same approach for an
-authenticated procedure.
+from the Better Auth session. Global roles are defined in
+[`packages/auth/src/rbac.ts`](../packages/auth/src/rbac.ts): `student`,
+`provider`, and `admin`. The long-term RBAC boundary is deliberately simple:
+
+| Layer | Responsibility | Uses |
+| --- | --- | --- |
+| [`packages/auth/src/rbac.ts`](../packages/auth/src/rbac.ts) | Defines roles and the shared `hasAnyRole` matching policy. | Every server transport that needs global-role matching. |
+| `createRoleMiddleware` in [`orpc.router.ts`](../apps/server/src/orpc/orpc.router.ts) | Performs oRPC session and role enforcement, returning oRPC `UNAUTHORIZED` or `FORBIDDEN` errors. | Applying a role requirement with `.use(...)`. |
+| Future Nest `RolesGuard` | Performs equivalent controller-boundary enforcement using Nest HTTP exceptions. | A traditional Nest controller or infrastructure endpoint that needs roles. |
+
+There is no shared `requireRoles` or `requireSessionWithAnyRole` wrapper. Such
+a wrapper would either leak oRPC errors into Nest controllers or duplicate a
+transport adapter. The one shared policy is `hasAnyRole`: a user passes when
+one of their assigned roles matches an allowed role; they do not need every
+listed role.
+
+#### Extend authorization without creating technical debt
+
+For the current oRPC transport, add a role requirement with
+`createRoleMiddleware`. If a future conventional Nest controller needs RBAC,
+add a Nest `RolesGuard` in `apps/server` that reads the Better Auth session and
+calls `hasAnyRole`. Do not import oRPC middleware or `ORPCError` into that
+guard.
+
+```text
+Shared role policy              packages/auth/rbac.ts
+oRPC request enforcement        apps/server/src/orpc/
+Nest controller enforcement     future apps/server auth/guard feature
+Resource ownership/invariants   apps/server service
+```
+
+Create abstractions only when the current code has a clear reuse case. A Nest
+guard is not necessary while all protected application APIs use oRPC; similarly,
+do not move service-level ownership checks into either transport adapter.
+
+Use the router middleware factory for a new protected procedure:
+
+```ts
+const requireProvider = createRoleMiddleware("provider", "admin");
+
+privateData: o.privateData
+  .use(requireProvider)
+  .handler(({ context }) => orpcService.getPrivateData(context.session.user));
+```
+
+The current starter `privateData` procedure uses the same pattern. A role is a
+global permission, not resource ownership: the service must still verify that
+a provider owns the scholarship or application being changed. Keep these oRPC
+helpers at the API boundary; services receive an already authenticated actor
+and enforce domain ownership and business rules.
 
 Authentication answers “who is this?” Authorization answers “may this actor
 perform this action on this resource?” Do both on the server.
 
 ```ts
-// conceptual service rule
-if (!canManageScholarships(actor)) {
+// conceptual service rule after RBAC has passed
+if (!scholarship.belongsToProvider(actor.id)) {
   throw new ORPCError("FORBIDDEN");
 }
 ```
@@ -313,8 +360,10 @@ Treat contract changes as compatibility changes:
 
 ## Testing a new API
 
-Vitest is the selected test framework. Add tests alongside the code they
-exercise; do not claim an untested API is complete.
+Vitest is the selected test framework. For server feature code, place tests in
+that feature's `tests/` directory: `apps/server/src/<feature>/tests/`. For
+example, oRPC authorization tests live in `apps/server/src/orpc/tests/`. Do not
+claim an untested API is complete.
 
 | Layer | What to test |
 | --- | --- |

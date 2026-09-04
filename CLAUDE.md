@@ -57,6 +57,17 @@ The current oRPC contract is `packages/api/src/index.ts`. Its server
 implementation is composed from `apps/server/src/orpc/`. The oRPC transport is
 mounted at `/rpc`; Better Auth is hosted by `apps/server` at `/api/auth/*path`.
 
+Global Better Auth roles are `student`, `provider`, and `admin`. Define policy
+in `packages/auth/src/rbac.ts`, including the shared `hasAnyRole` matching
+policy. `createRoleMiddleware` in `orpc.router.ts` is the oRPC enforcement
+adapter; future Nest controllers should use a Nest guard that calls the same
+policy. Always add domain ownership checks in services in addition to a role
+check.
+
+Keep policy transport-neutral: do not expose oRPC errors from `packages/auth`
+or reuse oRPC middleware in Nest controllers. Add a new transport adapter only
+when that transport exists; avoid speculative guards and premature packages.
+
 ## Commands
 
 Use pnpm. Prefer package-local checks while iterating:
@@ -82,6 +93,10 @@ pnpm db:studio
 
 Do not start a development server unless explicitly asked. Do not use
 `prisma migrate dev` as a production container startup action.
+
+Place server feature tests in `apps/server/src/<feature>/tests/`, creating the
+directory when the feature receives its first test. Do not commit empty test
+directories.
 
 ## Deployment guardrails
 
