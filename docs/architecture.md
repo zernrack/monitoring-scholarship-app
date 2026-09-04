@@ -236,6 +236,16 @@ Browser code must never directly access Neon/PostgreSQL or database credentials.
 
 The Better Auth instance is in `packages/auth/src/index.ts`, uses `packages/db` through the Prisma adapter, enables email/password authentication, and trusts `env.CORS_ORIGIN`. `apps/server/src/index.ts` is the executable host for it at `/api/auth/*path`. The web application consumes it through `apps/web/src/lib/auth-client.ts` using `better-auth/react`.
 
+Better Auth's Admin plugin provides the current global RBAC model. The policy
+definitions are in `packages/auth/src/rbac.ts` and define the `student`,
+`provider`, and `admin` roles. New registrations receive `student` by default.
+The plugin-added role, ban, and impersonation fields are stored in the
+server-only Prisma schema. The reusable `requireRoles` helper lives in
+`apps/server/src/orpc/orpc.authorization.ts`; use it from an oRPC middleware
+to enforce roles. Role checks do not replace domain ownership checks:
+for example, a provider must also own the scholarship they are attempting to
+change.
+
 ```text
 apps/web
   ↓ authentication request/session UI

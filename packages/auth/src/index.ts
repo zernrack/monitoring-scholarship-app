@@ -2,6 +2,9 @@ import prisma from "@monitoring-scholarship-app/db";
 import { env } from "@monitoring-scholarship-app/env/server";
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
+import { admin as adminPlugin } from "better-auth/plugins";
+
+import { accessControl, roles } from "./rbac";
 
 const isProduction = env.NODE_ENV === "production";
 
@@ -21,5 +24,11 @@ export const auth = betterAuth({
       httpOnly: true,
     },
   },
-  plugins: [],
+  plugins: [
+    adminPlugin({
+      ac: accessControl,
+      roles,
+      defaultRole: "student",
+    }),
+  ],
 });

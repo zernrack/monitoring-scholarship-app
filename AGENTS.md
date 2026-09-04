@@ -78,6 +78,11 @@ The current API contract is `packages/api/src/index.ts`; its server
 implementation is under `apps/server/src/orpc/` and mounted at `/rpc`. Better
 Auth is hosted by the server at `/api/auth/*path`.
 
+Global Better Auth roles are `student`, `provider`, and `admin`. Their policy
+is in `packages/auth/src/rbac.ts`; use `requireRoles` from
+`apps/server/src/orpc/orpc.authorization.ts` in oRPC middleware. Roles do not
+replace resource-ownership checks in the service layer.
+
 ## Commands
 
 Use pnpm. Prefer the narrowest relevant package command while iterating.
@@ -110,6 +115,10 @@ For every new API:
 5. Authenticate and authorize on the server.
 6. Consume it from `apps/web` without importing implementation code.
 7. Add focused Vitest coverage and run type checks.
+
+Place server feature tests in `apps/server/src/<feature>/tests/`; create the
+directory when that feature receives its first test. Do not commit empty test
+directories.
 
 Use ordinary NestJS controllers in `apps/server` for webhooks, callbacks,
 health/readiness endpoints, and external REST or infrastructure endpoints.

@@ -184,16 +184,32 @@ is executable server code, and the service owns the use case.
 
 The server creates `OrpcContext` in
 [`apps/server/src/orpc/orpc.context.ts`](../apps/server/src/orpc/orpc.context.ts)
-from the Better Auth session. The current `requireAuth` middleware in
-`orpc.router.ts` protects `privateData`; reuse the same approach for an
-authenticated procedure.
+from the Better Auth session. Global roles are defined in
+[`packages/auth/src/rbac.ts`](../packages/auth/src/rbac.ts): `student`,
+`provider`, and `admin`. The reusable
+[`requireRoles`](../apps/server/src/orpc/orpc.authorization.ts) helper throws
+`UNAUTHORIZED` without a session and `FORBIDDEN` when the assigned Better Auth
+role lacks access.
+
+Wrap it in an oRPC middleware for a new protected procedure:
+
+```ts
+const requireProvider = o.middleware(({ context, next }) => {
+  const session = requireRoles(context.session, ["provider", "admin"]);
+  return next({ context: { session } });
+});
+```
+
+The current starter `privateData` procedure uses the same pattern. A role is a
+global permission, not resource ownership: the service must still verify that
+a provider owns the scholarship or application being changed.
 
 Authentication answers “who is this?” Authorization answers “may this actor
 perform this action on this resource?” Do both on the server.
 
 ```ts
-// conceptual service rule
-if (!canManageScholarships(actor)) {
+// conceptual service rule after RBAC has passed
+if (!scholarship.belongsToProvider(actor.id)) {
   throw new ORPCError("FORBIDDEN");
 }
 ```
@@ -313,8 +329,10 @@ Treat contract changes as compatibility changes:
 
 ## Testing a new API
 
-Vitest is the selected test framework. Add tests alongside the code they
-exercise; do not claim an untested API is complete.
+Vitest is the selected test framework. For server feature code, place tests in
+that feature's `tests/` directory: `apps/server/src/<feature>/tests/`. For
+example, oRPC authorization tests live in `apps/server/src/orpc/tests/`. Do not
+claim an untested API is complete.
 
 | Layer | What to test |
 | --- | --- |
