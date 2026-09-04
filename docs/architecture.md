@@ -240,7 +240,7 @@ Better Auth's Admin plugin provides the current global RBAC model. The policy
 definitions are in `packages/auth/src/rbac.ts` and define the `student`,
 `provider`, and `admin` roles. New registrations receive `student` by default.
 The plugin-added role, ban, and impersonation fields are stored in the
-server-only Prisma schema. The reusable `requireRoles` helper lives in
+server-only Prisma schema. The reusable `requireSessionWithAnyRole` helper lives in
 `apps/server/src/orpc/orpc.authorization.ts`; use it from an oRPC middleware
 to enforce roles. Role checks do not replace domain ownership checks:
 for example, a provider must also own the scholarship they are attempting to
@@ -331,7 +331,7 @@ Turborepo orchestrates tasks and caching via `turbo.json`; build and type-check 
 | NestJS module/provider/controller, business service, webhook, health endpoint | `apps/server` |
 | Repository and Prisma query/client | `apps/server` or server-only `packages/db` |
 | Better Auth authoritative configuration | server-only `packages/auth`, hosted by `apps/server` |
-| Authorization | `apps/server` |
+| Authorization | `apps/server`; use `requireSessionWithAnyRole` for the session/role check and `createRoleMiddleware` to attach it to an oRPC procedure |
 | PartyKit publishing decision | `apps/server` |
 | PartyKit subscription | `apps/web` |
 | Privileged R2 integration | `apps/server` |

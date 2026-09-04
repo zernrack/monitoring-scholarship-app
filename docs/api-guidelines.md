@@ -186,23 +186,33 @@ The server creates `OrpcContext` in
 [`apps/server/src/orpc/orpc.context.ts`](../apps/server/src/orpc/orpc.context.ts)
 from the Better Auth session. Global roles are defined in
 [`packages/auth/src/rbac.ts`](../packages/auth/src/rbac.ts): `student`,
-`provider`, and `admin`. The reusable
-[`requireRoles`](../apps/server/src/orpc/orpc.authorization.ts) helper throws
-`UNAUTHORIZED` without a session and `FORBIDDEN` when the assigned Better Auth
-role lacks access.
+`provider`, and `admin`. Authorization has two deliberately different helpers:
 
-Wrap it in an oRPC middleware for a new protected procedure:
+| Helper | Responsibility | Use it when |
+| --- | --- | --- |
+| [`requireSessionWithAnyRole`](../apps/server/src/orpc/orpc.authorization.ts) | Verifies a session exists and its user has **any** allowed role; returns the now non-null session. | Writing a focused authorization check. |
+| `createRoleMiddleware` in [`orpc.router.ts`](../apps/server/src/orpc/orpc.router.ts) | Adapts that check into oRPC middleware for a procedure. | Applying the same requirement with `.use(...)`. |
+
+`requireSessionWithAnyRole` throws `UNAUTHORIZED` without a session and
+`FORBIDDEN` when the assigned Better Auth role lacks access. Its plural
+`AnyRole` wording is intentional: a user passes if one of the allowed roles
+matches; it does not require every listed role.
+
+Use the router middleware factory for a new protected procedure:
 
 ```ts
-const requireProvider = o.middleware(({ context, next }) => {
-  const session = requireRoles(context.session, ["provider", "admin"]);
-  return next({ context: { session } });
-});
+const requireProvider = createRoleMiddleware("provider", "admin");
+
+privateData: o.privateData
+  .use(requireProvider)
+  .handler(({ context }) => orpcService.getPrivateData(context.session.user));
 ```
 
 The current starter `privateData` procedure uses the same pattern. A role is a
 global permission, not resource ownership: the service must still verify that
-a provider owns the scholarship or application being changed.
+a provider owns the scholarship or application being changed. Keep these oRPC
+helpers at the API boundary; services receive an already authenticated actor
+and enforce domain ownership and business rules.
 
 Authentication answers “who is this?” Authorization answers “may this actor
 perform this action on this resource?” Do both on the server.

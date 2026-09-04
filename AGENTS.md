@@ -79,9 +79,10 @@ implementation is under `apps/server/src/orpc/` and mounted at `/rpc`. Better
 Auth is hosted by the server at `/api/auth/*path`.
 
 Global Better Auth roles are `student`, `provider`, and `admin`. Their policy
-is in `packages/auth/src/rbac.ts`; use `requireRoles` from
-`apps/server/src/orpc/orpc.authorization.ts` in oRPC middleware. Roles do not
-replace resource-ownership checks in the service layer.
+is in `packages/auth/src/rbac.ts`. `requireSessionWithAnyRole` in
+`apps/server/src/orpc/orpc.authorization.ts` performs the session/role check;
+`createRoleMiddleware` in `orpc.router.ts` adapts it for oRPC procedures. Roles
+do not replace resource-ownership checks in the service layer.
 
 ## Commands
 

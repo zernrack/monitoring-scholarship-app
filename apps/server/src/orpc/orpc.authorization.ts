@@ -5,11 +5,16 @@ type SessionUser = {
   role?: string | null;
 };
 
-/** Enforce a global Better Auth role in an oRPC middleware or service. */
-export function requireRoles<TSession extends { user: SessionUser }>(
+/**
+ * Require an authenticated session whose user has at least one allowed global role.
+ *
+ * This is the low-level oRPC authorization check. It does not create middleware;
+ * `createRoleMiddleware` in `orpc.router.ts` adapts it for a procedure.
+ */
+export function requireSessionWithAnyRole<TSession extends { user: SessionUser }>(
   session: TSession | null | undefined,
   allowedRoles: readonly UserRole[],
-) : TSession {
+): TSession {
   if (!session) {
     throw new ORPCError("UNAUTHORIZED");
   }
