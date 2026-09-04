@@ -1,117 +1,114 @@
 # monitoring-scholarship-app
 
-This file provides context about the project for AI assistants.
+Guidance for AI coding agents working in this repository.
 
-## Project Overview
+## Source of truth
 
-- **Ecosystem**: Typescript
+- [docs/architecture.md](./docs/architecture.md) is the architecture and
+  code-placement authority.
+- [docs/api-guidelines.md](./docs/api-guidelines.md) is the required guide for
+  new or changed APIs.
+- [docs/deployment.md](./docs/deployment.md) documents Docker, environment,
+  and production deployment requirements.
+- `bts.jsonc` is the authority for the Better Fullstack stack graph. Package
+  manifests and `pnpm-lock.yaml` are authoritative for installed versions.
 
-## Tech Stack
+## Architectural boundary
 
-- **Runtime**: node
-- **Package Manager**: pnpm
-
-### Frontend
-
-- Framework: next
-- CSS: tailwind
-- UI Library: shadcn-ui
-- State: zustand
-
-### Backend
-
-- Framework: nestjs
-- API: orpc
-- Validation: zod
-
-### Database
-
-- Database: postgres
-- ORM: prisma
-
-### Authentication
-
-- Provider: better-auth
-
-### Additional Features
-
-- Testing: vitest
-- Realtime: partykit
-
-## Project Structure
-
-```
-monitoring-scholarship-app/
-├── apps/
-│   ├── web/         # Frontend application
-│   └── server/      # Backend API
-├── packages/
-│   ├── api/         # API layer
-│   ├── auth/        # Authentication
-│   └── db/          # Database schema
+```text
+packages/api = contract
+apps/server  = implementation
+apps/web     = consumer
 ```
 
-## Common Commands
+- Put oRPC contracts, API-safe Zod schemas, and API types in `packages/api`.
+- Put all executable oRPC handlers, NestJS modules/providers/services,
+  authorization, business rules, Prisma access, webhooks, R2 integration, and
+  PartyKit publishing in `apps/server`.
+- Put pages, components, TanStack Form/Table/Virtual, Zustand, oRPC client
+  consumption, and browser-facing behavior in `apps/web`.
+- `packages/api` must never depend on `apps/server`, Prisma, `packages/db`,
+  NestJS, secrets, or runtime environment modules.
+- `apps/web` must never import `apps/server` source files, Prisma,
+  `packages/db`, server secrets, or Better Auth's authoritative configuration.
 
-- `pnpm install` - Install dependencies
-- `pnpm dev` - Start development server
-- `pnpm build` - Build for production
-- `pnpm test` - Run tests
-- `pnpm db:push` - Push database schema
-- `pnpm db:studio` - Open database UI
+For non-trivial APIs, use:
 
-## Better Fullstack project context
+```text
+oRPC handler/controller → service → repository → Prisma → Neon/PostgreSQL
+```
 
-`bts.jsonc` is the authority for the current Stack Graph. Its `stackParts` array owns role selection and `ownerPartId` bindings. Top-level option fields are a compatibility projection and must not become a second mutation path.
+Keep handlers thin. Do not put substantial business workflows or direct
+database access in the API contract package or browser application.
 
-### Stack Parts, ownership, and evidence
+## Current repository structure
 
-- `aiTooling:universal:mcp`. Evidence is `listed` with `unverified` freshness. Verification maintainer: @Marve10s.
-- `aiTooling:universal:skills`. Evidence is `listed` with `unverified` freshness. Verification maintainer: @Marve10s.
-- `backend.api:typescript:orpc`. It belongs to `backend:typescript:nestjs`. Evidence is `listed` with `unverified` freshness. Verification maintainer: @Marve10s.
-- `backend.auth:typescript:better-auth`. It belongs to `backend:typescript:nestjs`. Evidence is `listed` with `unverified` freshness. Verification maintainer: @Marve10s.
-- `backend.deploy:typescript:docker`. It belongs to `backend:typescript:nestjs`. Evidence is `listed` with `unverified` freshness. Verification maintainer: @Marve10s.
-- `backend.fileStorage:typescript:r2`. It belongs to `backend:typescript:nestjs`. Evidence is `listed` with `unverified` freshness. Verification maintainer: @Marve10s.
-- `backend.orm:typescript:prisma`. It belongs to `backend:typescript:nestjs`. Evidence is `listed` with `unverified` freshness. Verification maintainer: @Marve10s.
-- `backend.realtime:typescript:partykit`. It belongs to `backend:typescript:nestjs`. Evidence is `listed` with `unverified` freshness. Verification maintainer: @Marve10s.
-- `backend.runtime:typescript:node`. It belongs to `backend:typescript:nestjs`. Evidence is `listed` with `unverified` freshness. Verification maintainer: @Marve10s.
-- `backend.testing:typescript:vitest`. It belongs to `backend:typescript:nestjs`. Evidence is `listed` with `unverified` freshness. Verification maintainer: @Marve10s.
-- `backend.validation:typescript:zod`. It belongs to `backend:typescript:nestjs`. Evidence is `listed` with `unverified` freshness. Verification maintainer: @Marve10s.
-- `backend:typescript:nestjs`. Its generated target is `apps/server`. Evidence is `listed` with `unverified` freshness. Verification maintainer: @Marve10s.
-- `continuousIntegration:universal:github-actions`. Evidence is `listed` with `unverified` freshness. Verification maintainer: @Marve10s.
-- `database.dbSetup:universal:neon`. It belongs to `database:universal:postgres`. Evidence is `listed` with `unverified` freshness. Verification maintainer: @Marve10s.
-- `database:universal:postgres`. Its generated target is `packages/db`. Evidence is `listed` with `unverified` freshness. Verification maintainer: @Marve10s.
-- `frontend.css:typescript:tailwind`. It belongs to `frontend:typescript:next`. Evidence is `listed` with `unverified` freshness. Verification maintainer: @Marve10s.
-- `frontend.deploy:typescript:docker`. It belongs to `frontend:typescript:next`. Evidence is `listed` with `unverified` freshness. Verification maintainer: @Marve10s.
-- `frontend.forms:typescript:tanstack-form`. It belongs to `frontend:typescript:next`. Evidence is `listed` with `unverified` freshness. Verification maintainer: @Marve10s.
-- `frontend.libraries:typescript:tanstack-table`. It belongs to `frontend:typescript:next`. Evidence is `listed` with `unverified` freshness. Verification maintainer: @Marve10s.
-- `frontend.libraries:typescript:tanstack-virtual`. It belongs to `frontend:typescript:next`. Evidence is `listed` with `unverified` freshness. Verification maintainer: @Marve10s.
-- `frontend.stateManagement:typescript:zustand`. It belongs to `frontend:typescript:next`. Evidence is `listed` with `unverified` freshness. Verification maintainer: @Marve10s.
-- `frontend.ui:typescript:shadcn-ui`. It belongs to `frontend:typescript:next`. Evidence is `listed` with `unverified` freshness. Verification maintainer: @Marve10s.
-- `frontend:typescript:next`. Its generated target is `apps/web`. Evidence is `listed` with `unverified` freshness. Verification maintainer: @Marve10s.
-- `workspaceRunner:universal:turborepo`. Evidence is `listed` with `unverified` freshness. Verification maintainer: @Marve10s.
+```text
+apps/web                 Next.js frontend
+apps/server              NestJS backend and oRPC transport
+packages/api             contract-only oRPC/Zod package
+packages/auth            server-only Better Auth configuration
+packages/db              server-only Prisma/Neon client and schema
+packages/env             `/server` and `/web` environment validation exports
+packages/config          shared TypeScript configuration
+```
 
-### Installed-version authority
+The current oRPC contract is `packages/api/src/index.ts`. Its server
+implementation is composed from `apps/server/src/orpc/`. The oRPC transport is
+mounted at `/rpc`; Better Auth is hosted by `apps/server` at `/api/auth/*path`.
 
-Use `bts.jsonc` for the generator and schema version. Use local package manifests and lockfiles for installed dependency versions. Do not assume that documentation for a newer Better Fullstack release matches this project.
+## Commands
 
-### Compatibility and lifecycle safety
+Use pnpm. Prefer package-local checks while iterating:
 
-Run `create-better-fullstack context --json` for bounded roles, capabilities, evidence, compatibility issues, and safe next actions. Run `create-better-fullstack doctor --json` before repairing graph drift. Existing-project writes must start with a plan and use the exact review token. Use `create-better-fullstack recipes check --json` before editing recipe-owned paths or managed regions, and use recipe history plus project recovery commands to undo a reviewed operation.
+```bash
+pnpm --filter @monitoring-scholarship-app/api test
+pnpm --filter server test
+pnpm --filter web test
+pnpm --filter server check-types
+pnpm run check-types
+pnpm run build
+pnpm run test
+```
 
-User code outside an explicit Better Fullstack managed region is not generator-owned. Missing or changed managed-region hashes stop recipe planning for manual review.
+Database commands:
 
-<!-- <better-fullstack:recipes sha256=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855> -->
+```bash
+pnpm db:generate
+pnpm db:push
+pnpm db:migrate
+pnpm db:studio
+```
 
-<!-- </better-fullstack:recipes> -->
+Do not start a development server unless explicitly asked. Do not use
+`prisma migrate dev` as a production container startup action.
 
-## Maintenance
+## Deployment guardrails
 
-Keep CLAUDE.md updated when:
+- Build `apps/web` and `apps/server` Docker images using the repository root
+  as build context.
+- `DATABASE_URL` and `BETTER_AUTH_SECRET` are server-only secrets. Never use
+  `NEXT_PUBLIC_*`, commit them, or bake them into images.
+- `NEXT_PUBLIC_SERVER_URL` is public and build-time; rebuild the web image
+  when it changes.
+- Production uses a Neon `DATABASE_URL`, exact HTTPS `BETTER_AUTH_URL` and
+  `CORS_ORIGIN`, and separate web/server deployments.
+- Consult `docs/deployment.md` before changing Dockerfiles or deployment
+  workflows; it records the current server entrypoint caveat.
 
-- Adding/removing dependencies
-- Changing project structure
-- Adding new features or services
-- Modifying build/dev workflows
+## Better Fullstack lifecycle
 
-AI assistants should suggest updates to this file when they notice relevant changes.
+The project was generated by Better Fullstack. Use `bts.jsonc` to understand
+selected stack parts; do not treat top-level compatibility fields as a second
+mutation path. Before repairing graph drift, run:
+
+```bash
+pnpm dlx create-better-fullstack context --json
+pnpm dlx create-better-fullstack doctor --json
+```
+
+For recipe-owned paths or managed regions, run the recipe check first and
+follow its review/recovery guidance. User code outside explicit managed regions
+is not generator-owned.
+
+MCP and AI skills are development tooling, never production runtime services.

@@ -6,14 +6,16 @@ name: monitoring-scholarship-app
 services:
   web:
     build:
-      context: ./apps/web
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_SERVER_URL: ${NEXT_PUBLIC_SERVER_URL:-http://localhost:3001}
     container_name: monitoring-scholarship-app-web
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-      - VITE_API_URL=http://server:3001
+      - NEXT_PUBLIC_SERVER_URL=${NEXT_PUBLIC_SERVER_URL:-http://localhost:3001}
     restart: unless-stopped
     depends_on:
       - server
@@ -22,15 +24,18 @@ services:
 
   server:
     build:
-      context: ./apps/server
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: apps/server/Dockerfile
     container_name: monitoring-scholarship-app-server
     ports:
       - "3001:3000"
     environment:
       - NODE_ENV=production
       - PORT=3000
-      - DATABASE_URL=postgresql://postgres:password@db:5432/monitoring-scholarship-app
+      - DATABASE_URL=${DATABASE_URL:-postgresql://postgres:password@db:5432/monitoring-scholarship-app}
+      - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET:?Set BETTER_AUTH_SECRET in your shell or Compose env file}
+      - BETTER_AUTH_URL=${BETTER_AUTH_URL:-http://localhost:3001}
+      - CORS_ORIGIN=${CORS_ORIGIN:-http://localhost:3000}
     restart: unless-stopped
     depends_on:
       - db

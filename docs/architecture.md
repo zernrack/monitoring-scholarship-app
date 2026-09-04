@@ -291,7 +291,7 @@ If a notification is needed, the service decides to publish through PartyKit aft
 
 ## Deployment and CI
 
-The repository includes `apps/web/Dockerfile`, `apps/server/Dockerfile`, and `docker-compose.yml`. The selected deployment model is two deployable applications:
+The repository includes `apps/web/Dockerfile`, `apps/server/Dockerfile`, and `docker-compose.yml`. Both Dockerfiles build from the monorepo root so their shared workspace dependencies are available. The Next.js image uses standalone output with the workspace root as its tracing root; the server image builds the `server` workspace and retains the server's required workspace packages at runtime. The selected deployment model is two deployable applications:
 
 ```text
                     Git repository
@@ -304,7 +304,7 @@ The repository includes `apps/web/Dockerfile`, `apps/server/Dockerfile`, and `do
         Web Docker image      Server Docker image
 ```
 
-Shared packages, including `packages/api`, are build dependencies and are not standalone deployments. The checked-in Compose file also defines a local PostgreSQL container. Its current build contexts point at the individual app directories while the Dockerfiles copy workspace-root files; treat that as an implementation detail to validate before using Compose as the production build path, not as evidence that shared packages are deployable services.
+Shared packages, including `packages/api`, are build dependencies and are not standalone deployments. The checked-in Compose file defines a local PostgreSQL container for containerized local use. It requires `BETTER_AUTH_SECRET` and accepts `DATABASE_URL`, `BETTER_AUTH_URL`, `CORS_ORIGIN`, and `NEXT_PUBLIC_SERVER_URL` from the environment; production deployments should inject those values through their secret/configuration system and point `DATABASE_URL` at Neon rather than the local Compose database.
 
 GitHub Actions currently runs on pushes and pull requests to `main`/`master`, installs with pnpm, then runs root `check-types`, `build`, and `test`. It does not currently build/push Docker images or deploy. Those are reasonable future CI stages, but are not current generated behavior.
 
