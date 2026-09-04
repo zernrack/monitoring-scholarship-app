@@ -1,0 +1,29 @@
+{
+  "name": "@monitoring-scholarship-app/auth",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@better-auth/prisma-adapter": "1.6.22",
+    "@monitoring-scholarship-app/db": "workspace:*",
+    "@monitoring-scholarship-app/env": "workspace:*",
+    "better-auth": "catalog:",
+    "dotenv": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@monitoring-scholarship-app/config": "workspace:*",
+    "typescript": "^6.0.3"
+  }
+}
